@@ -20,6 +20,7 @@
 
         setInterval(function () {
             if(!connected){
+                console.log('asked for new')
                 websocket = new WebSocket(URL);
             }
         }, 1000);
