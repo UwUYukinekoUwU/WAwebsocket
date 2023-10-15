@@ -4,11 +4,11 @@ import asyncio
 import time
 
 PORT = 8080
-print("Server listening on Port " + str(PORT))
 
 # A set of connected ws clients
 connected = list()
-banned_IPs = list()
+banned_IPs = dict()
+unban_time = 10
 client_id = 1
 
 
@@ -16,8 +16,11 @@ client_id = 1
 async def echo(websocket, path):
     # don't let the exiled ones in
     client_ip = websocket.remote_address[0]
-    if client_ip in banned_IPs:
-        disconnect(websocket=websocket)
+
+    if client_ip in banned_IPs.keys():
+        if not check_if_unban(client_ip=client_ip):
+            disconnect(websocket=websocket)
+            return
 
     print("A client just connected")
     # Store a copy of the connected client
@@ -57,11 +60,17 @@ def disconnect(websocket):
         if client[1] == websocket:
             connected.remove(client)
 
+def check_if_unban(client_ip):
+    if time.time() - banned_IPs[client_ip] > unban_time:
+        banned_IPs.__delitem__(client_ip)
+        return True
+
+    return False
 
 async def ban(websocket):
     print("banned")
     await websocket.send("SERVER_MESSAGE: Nuh uh.")
-    banned_IPs.append(websocket.remote_address[0])
+    banned_IPs[websocket.remote_address[0]] = time.time()
     disconnect(websocket)
 
 
