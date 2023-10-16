@@ -79,6 +79,6 @@ def check_if_unban(client_ip):
 
 
 if __name__ == "__main__":
-    start_server = websockets.serve(echo, "localhost", PORT)
+    start_server = websockets.serve(echo, "0.0.0.0", PORT)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
