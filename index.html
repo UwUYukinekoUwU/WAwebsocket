@@ -14,32 +14,60 @@
 
     <script>
         const URL = "ws://localhost:8080";
-        var websocket = new WebSocket(URL);
+        let websocket;
         const messagesDiv = document.getElementById("messages");
-        var connected = false;
+        let connected = false;
+        let banned = false;
 
-        setInterval(function () {
-            if(!connected){
-                console.log('asked for new')
-                websocket = new WebSocket(URL);
+        //setTimeout(tryConnection, 1000);
+        tryConnection();
+        function tryConnection(){
+            websocket = new WebSocket(URL);
+            if(websocket.CLOSED && !websocket.CONNECTING && !websocket.CLOSING && !websocket.OPEN){
+                console.log('connecting: '+websocket.CONNECTING+' closing: '+websocket.CLOSING+' open'+websocket.OPEN);
+                console.log('asked for new');
+                setTimeout(tryConnection, 5000);
+                return;
             }
-        }, 1000);
 
-        websocket.onopen = function(event) {
-            connected = true;
-            alert("Pripojeno");
+
+            websocket.onopen = function(event) {
+                if(!banned){
+                    alert("Pripojeno");
+                }
+                connected = true;
+                console.log('pripojeno');
+            }
+            websocket.onmessage = function(event) {
+                if(`${event.data}` == 'SERVER_MESSAGE: Banned.'){
+                    alert('Odpojeno');
+                    banned = true;
+                }
+                else if(`${event.data}` == 'SERVER_MESSAGE: Unbanned.'){
+                    alert('Pripojeno');
+                    banned = false;
+                }
+                console.log('got message');
+                messagesDiv.innerHTML = `<p>${event.data}</p>` + messagesDiv.innerHTML;
+            };
+            websocket.onclose = function(event) {
+                if(!banned && connected) {
+                    alert("Odpojeno");
+                }
+                connected = false;
+                console.log('odpojeno');
+                setTimeout(tryConnection, 1000);
+            };
+            websocket.addEventListener('error', (error) => {
+                console.error('WebSocket error:', error);
+            });
         }
-        websocket.onmessage = function(event) {
-            messagesDiv.innerHTML = `<p>${event.data}</p>` + messagesDiv.innerHTML;
-        };
-        websocket.onclose = function(event) {
-            connected = false;
-            alert("Odpojeno");
-        };
 
         document.getElementById("send").addEventListener("click", function() {
-            const message = document.getElementById("message").value;
-            websocket.send(message);
+            if(connected){
+                const message = document.getElementById("message").value;
+                websocket.send(message);
+            }
         });
     </script>
 </body>
